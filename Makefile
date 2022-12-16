@@ -1,11 +1,28 @@
-# Specify the target file and the sources that it depends on
-main: main.c tm_mem.c tm_utils.c
-	gcc -Wall main.c tm_mem.c tm_utils.c -o tuxmem
+# Makefile for creating a static library
 
-# Specify the target for cleaning up the project directory
+# Compiler to use
+CC = gcc
+
+# Compiler flags
+CFLAGS = -c -Wall
+
+# Name of the static library to create
+LIBRARY = tuxmem.a
+
+# Source files for the library
+SOURCES = tm_mem.c tm_utils.c
+
+# Object files for the library
+OBJECTS = $(SOURCES:.c=.o)
+
+# Target for creating the static library
+$(LIBRARY): $(OBJECTS)
+	ar rcs $(LIBRARY) $(OBJECTS)
+
+# Rule for creating object files
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+# Cleanup rule
 clean:
-	rm -f main
-
-# Specify the target for the "all" operator and its dependencies
-all: main clean
-
+	rm -f $(OBJECTS) $(LIBRARY)
