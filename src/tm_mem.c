@@ -69,8 +69,6 @@ _tm_mem_get_pid_of_name (const char *name, uint32_t *out)
       if (status != TM_MEM_OK)
         continue;
 
-      printf ("%s\n", exe);
-
       if (strcmp (exe, name) == 0)
         {
           *out = cur_pid;
@@ -125,23 +123,80 @@ tm_mem_errors_t
 tm_mem_get_region_list (tm_mem_t *mem, tm_mem_region_t **regions,
                         uint32_t *num_regions)
 {
-  // iterate through /proc/<pid>/maps
-  // and add each region to the list
-  //  if the region is not already in the list
-  //  and the region permissions are correct
-  // if no regions found, return error
+  // open /proc/<pid>/maps
+  char path[64];
+  snprintf (path, sizeof (path), "/proc/%d/maps", mem->pid);
+
+  FILE *maps = fopen (path, "r");
+  if (maps == NULL)
+    {
+      perror ("fopen");
+      return TM_MEM_ERROR_UNDEFINED;
+    }
+
+  // iterate through lines
+  char line[256];
+  while (fgets (line, sizeof (line), maps))
+    {
+      // parse line
+      char *start = strtok (line, "-");
+      char *end = strtok (NULL, " ");
+      char *perms = strtok (NULL, " ");
+      strtok (NULL, " "); // offset
+      strtok (NULL, " "); // dev
+      strtok (NULL, " "); // inode
+      char *pathname = strtok (NULL, " ");
+
+      // strip away newline
+      pathname[strlen (pathname) - 1] = '\0';
+
+      // check if name is empty
+      if (strlen (pathname) == 0)
+        continue;
+
+      // skip if not readable
+      if (perms[0] != 'r')
+        continue;
+
+      // convert to numbers
+      uint64_t start_address = strtoull (start, NULL, 16);
+      uint64_t end_address = strtoull (end, NULL, 16);
+
+      // add to regions
+      *regions
+          = realloc (*regions, sizeof (tm_mem_region_t) * (*num_regions + 1));
+      (*regions)[*num_regions].name = strdup (pathname);
+      (*regions)[*num_regions].start = start_address;
+      (*regions)[*num_regions].size = end_address - start_address;
+      (*num_regions)++;
+    }
+
+  fclose (maps);
   return TM_MEM_OK;
 }
 tm_mem_errors_t
 tm_mem_get_region (tm_mem_t *mem, const char *name, tm_mem_region_t *region)
 {
-  // iterate through /proc/<pid>/maps
-  // go through each line
-  // parse line
-  // check permissions
-  // if name matches, return region
-  // if no region found, return error
-  return TM_MEM_OK;
+  // overhead through the extra iteration over region list
+
+  uint32_t num_regions;
+  tm_mem_region_t *regions;
+  tm_mem_errors_t status
+      = tm_mem_get_region_list (mem, &regions, &num_regions);
+  if (status != TM_MEM_OK)
+    return status;
+
+  for (uint32_t i = 0; i < num_regions; i++)
+    {
+      if (strcmp (regions[i].name, name) == 0)
+        {
+          *region = regions[i];
+          free (regions);
+          return TM_MEM_OK;
+        }
+    }
+  free (regions);
+  return TM_MEM_ERROR_NOT_FOUND;
 }
 
 tm_mem_errors_t
