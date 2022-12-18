@@ -1,40 +1,124 @@
-#include "tm_mem.h"
+#include "../include/tm_mem.h"
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/uio.h>
+#include <unistd.h>
 
 tm_mem_errors_t
-_tm_mem_get_exe_link (uint32_t pid, const char *out)
+_tm_mem_get_exe_link (uint32_t pid, const char **out)
 {
-  // open proc/<pid>/exe file
-  // read link
-  // write link to out
-  // if error, return error
+  char path[64];
+  snprintf (path, sizeof (path), "/proc/%d/exe", pid);
+
+  char exe[64];
+  ssize_t len = readlink (path, exe, sizeof (exe));
+  if (len == -1)
+    return TM_MEM_ERROR_UNDEFINED;
+
+  exe[len] = '\0';
+
+  *out = strdup (exe);
+
   return TM_MEM_OK;
+}
+tm_mem_errors_t
+_tm_mem_open_mem_fd (uint32_t pid, FILE **out)
+{
+  char path[64];
+  snprintf (path, sizeof (path), "/proc/%d/mem", pid);
+
+  FILE *mem = fopen (path, "r");
+  if (mem == NULL)
+    {
+      perror ("fopen");
+      return TM_MEM_ERROR_UNDEFINED;
+    }
+
+  *out = mem;
+  return TM_MEM_OK;
+}
+tm_mem_errors_t
+_tm_mem_get_pid_of_name (const char *name, uint32_t *out)
+{
+  uint32_t cur_pid = 0;
+  DIR *proc_folder = NULL;
+  DIR *pid_folder = NULL;
+
+  proc_folder = opendir ("/proc");
+  if (proc_folder == NULL)
+    {
+      perror ("opendir");
+      return TM_MEM_ERROR_NO_ACCESS;
+    }
+
+  struct dirent *entry;
+  while ((entry = readdir (proc_folder)))
+    {
+      if (entry->d_type != DT_DIR)
+        continue;
+
+      uint32_t cur_pid = atoi (entry->d_name);
+      if (cur_pid == 0)
+        continue;
+
+      const char *exe = "";
+      tm_mem_errors_t status;
+      status = _tm_mem_get_exe_link (cur_pid, &exe);
+      if (status != TM_MEM_OK)
+        continue;
+
+      printf ("%s\n", exe);
+
+      if (strcmp (exe, name) == 0)
+        {
+          *out = cur_pid;
+          break;
+        }
+    }
+
+  closedir (proc_folder);
+  closedir (pid_folder);
+  return (cur_pid == *out) ? TM_MEM_OK : TM_MEM_ERROR_NOT_FOUND;
 }
 
 tm_mem_errors_t
 tm_mem_open__name (const char *name, tm_mem_t *mem)
 {
-  // open proc folder
-  // iterate over all process folders
-  // if yes, open exe file
-  //  and read link
-  //  compare link to name
-  //  profit
-  // if no, continue
-  // if no process found, return error
+  mem->name = name;
+
+  tm_mem_errors_t status;
+  status = _tm_mem_get_pid_of_name (name, &mem->pid);
+  if (status != TM_MEM_OK)
+    return status;
+
+  status = _tm_mem_open_mem_fd (mem->pid, &mem->mem_file);
+  if (status != TM_MEM_OK)
+    return status;
+
   return TM_MEM_OK;
 }
 tm_mem_errors_t
 tm_mem_open__pid (uint32_t pid, tm_mem_t *mem)
 {
-  // get name through exe link
-  // set pid
-  // open mem file
+  mem->pid = pid;
+
+  tm_mem_errors_t status;
+  status = _tm_mem_get_exe_link (pid, &mem->name);
+  if (status != TM_MEM_OK)
+    return status;
+
+  status = _tm_mem_open_mem_fd (mem->pid, &mem->mem_file);
+  if (status != TM_MEM_OK)
+    return status;
+
   return TM_MEM_OK;
 }
 void
 tm_mem_close (tm_mem_t *mem)
 {
-  // close mem file
+  fclose (mem->mem_file);
 }
 
 tm_mem_errors_t

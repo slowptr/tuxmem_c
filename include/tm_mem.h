@@ -2,19 +2,21 @@
 #define TM_MEM_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 typedef enum tm_mem_errors_e
 {
   TM_MEM_OK = 0,
   TM_MEM_ERROR_UNDEFINED,
   TM_MEM_ERROR_NO_ACCESS,
+  TM_MEM_ERROR_NOT_FOUND,
 } tm_mem_errors_t;
 
 typedef struct tm_mem_s
 {
   const char *name;
   uint32_t pid;
-  int mem_fd;
+  FILE *mem_file;
 } tm_mem_t;
 
 typedef struct tm_mem_region_s

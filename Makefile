@@ -1,28 +1,49 @@
-# Makefile for creating a static library
+# Makefile for my_library
 
-# Compiler to use
+# Compiler and linker
 CC = gcc
 
 # Compiler flags
-CFLAGS = -c -Wall
+CFLAGS = -g -O2 -Wall -Wextra
 
-# Name of the static library to create
-LIBRARY = tuxmem.a
+# Library source files
+SRCS = $(wildcard src/*.c)
 
-# Source files for the library
-SOURCES = tm_mem.c tm_utils.c
+# Library object files
+OBJS = $(SRCS:.c=.o)
 
-# Object files for the library
-OBJECTS = $(SOURCES:.c=.o)
+# Library name
+TARGET = tuxmem.a
 
-# Target for creating the static library
-$(LIBRARY): $(OBJECTS)
-	ar rcs $(LIBRARY) $(OBJECTS)
+# Test source files
+TEST_SRCS = $(wildcard test/*.c)
 
-# Rule for creating object files
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+# Test executables
+TESTS = $(TEST_SRCS:.c=)
 
-# Cleanup rule
+# Include directories
+INCLUDES = -Iinclude
+
+# Library dependencies
+LDLIBS =
+
+# Build the library
+$(TARGET): $(OBJS)
+	ar rcs $@ $^
+
+# Compile the test executables
+$(TESTS): $(TARGET)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $@.c $(TARGET) $(LDLIBS)
+
+# Run the tests
+test: $(TESTS)
+	for test in $(TESTS); do \
+		./$$test; \
+	done
+
+# Clean up
 clean:
-	rm -f $(OBJECTS) $(LIBRARY)
+	rm -f $(OBJS) $(TARGET) $(TESTS)
+
+.PHONY: test clean
+
