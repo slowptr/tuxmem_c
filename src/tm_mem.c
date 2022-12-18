@@ -59,7 +59,7 @@ _tm_mem_get_pid_of_name (const char *name, uint32_t *out)
       if (entry->d_type != DT_DIR)
         continue;
 
-      uint32_t cur_pid = atoi (entry->d_name);
+      cur_pid = atoi (entry->d_name);
       if (cur_pid == 0)
         continue;
 
