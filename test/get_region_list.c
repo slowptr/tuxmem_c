@@ -32,10 +32,11 @@ main ()
       return status;
     }
 
-  for (uint32_t i = 0; i < num_regions; i++)
+  if (num_regions < 10)
     {
-      printf ("Region: %s | %d | %d\n", regions[i].name, regions[i].start,
-              regions[i].size);
+      printf ("Error: Not enough regions (for test case) found: %d.\n",
+              num_regions);
+      return TM_MEM_ERROR_UNDEFINED;
     }
 
   free (regions);

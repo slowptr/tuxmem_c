@@ -21,8 +21,6 @@ main ()
       return status;
     }
 
-  printf ("%s | %d\n", mem.name, mem.pid);
-
   tm_mem_close (&mem);
   return 0;
 }

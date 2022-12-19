@@ -43,21 +43,15 @@ tm_mem_errors_t tm_mem_write (tm_mem_t *mem, uintptr_t addr, void *buf,
 tm_mem_errors_t tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region,
                                      void *pattern, uint32_t pattern_len,
                                      uintptr_t *addr);
-tm_mem_errors_t tm_mem_alloc (tm_mem_t *mem, uintptr_t *addr, uint32_t size);
-tm_mem_errors_t tm_mem_free (tm_mem_t *mem, uintptr_t addr);
-tm_mem_errors_t tm_mem_change_prot (tm_mem_t *mem, uintptr_t addr,
-                                    uint32_t size, uint32_t prot);
+tm_mem_errors_t tm_mem_alloc (tm_mem_t *mem, void *addr, uint32_t size,
+                              void **mapped_mem);
+tm_mem_errors_t tm_mem_free (tm_mem_t *mem, void *addr, uint32_t size);
+tm_mem_errors_t tm_mem_change_prot (tm_mem_t *mem, void *addr, uint32_t size,
+                                    uint32_t prot);
 
 tm_mem_errors_t tm_mem_hook_create (tm_mem_t *mem, void *addr, void *hook,
                                     void **orig);
 tm_mem_errors_t tm_mem_hook_restore (tm_mem_t *mem, void *addr, void *orig);
 tm_mem_errors_t tm_mem_inject_library (tm_mem_t *mem, const char *lib_path);
 
-/*
-tm_mem_errors_t tm_mem_get_region_data (tm_mem_t *mem, tm_mem_region_t *region,
-                                        void **data, uint32_t *len);
-
-tm_mem_errors_t tm_mem_get_region_data__name (tm_mem_t *mem, const char *name,
-                                              void **data, uint32_t *len);
-*/
 #endif /* TM_MEM_H */

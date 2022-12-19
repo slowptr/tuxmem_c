@@ -1,7 +1,6 @@
 #include "../include/tm_mem.h"
 #include "../include/tm_utils.h"
-
-#define PROC_NAME "/usr/lib/chromium/chromium"
+#include <unistd.h>
 
 int
 main ()
@@ -14,19 +13,28 @@ main ()
 
   tm_mem_errors_t status;
   tm_mem_t mem;
-  status = tm_mem_open__name (PROC_NAME, &mem);
+  status = tm_mem_open__pid (getpid (), &mem);
   if (status != TM_MEM_OK)
     {
       printf ("Error: %s\n", tm_utils_status_to_str (status));
       return status;
     }
 
-  tm_mem_region_t region;
-  status = tm_mem_get_region (&mem, "/usr/lib/libatomic.so.1.2.0", &region);
+  int test = 1234;
+  uintptr_t test_addr = (uintptr_t)&test;
+  int read_test = 0;
+
+  status = tm_mem_read (&mem, test_addr, &read_test, sizeof (read_test));
   if (status != TM_MEM_OK)
     {
       printf ("Error: %s\n", tm_utils_status_to_str (status));
       return status;
+    }
+
+  if (read_test != test)
+    {
+      printf ("Error: read_test != test\n");
+      return TM_MEM_ERROR_UNDEFINED;
     }
 
   tm_mem_close (&mem);

@@ -1,8 +1,11 @@
+#define _GNU_SOURCE // needed for process_vm functions
+
 #include "../include/tm_mem.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -202,16 +205,24 @@ tm_mem_get_region (tm_mem_t *mem, const char *name, tm_mem_region_t *region)
 tm_mem_errors_t
 tm_mem_read (tm_mem_t *mem, uintptr_t addr, void *buf, uint32_t len)
 {
-  // use process_vm_readv
-  // if error, return error (bytes_read == len)
-  return TM_MEM_OK;
+  struct iovec local_iov = { buf, len };
+  struct iovec remote_iov = { (void *)addr, len };
+
+  ssize_t bytes_read
+      = process_vm_readv (mem->pid, &local_iov, 1, &remote_iov, 1, 0);
+
+  return (bytes_read == len) ? TM_MEM_OK : TM_MEM_ERROR_UNDEFINED;
 }
 tm_mem_errors_t
 tm_mem_write (tm_mem_t *mem, uintptr_t addr, void *buf, uint32_t len)
 {
-  // use process_vm_writev
-  // if error, return error (bytes_written == len)
-  return TM_MEM_OK;
+  struct iovec local_iov = { buf, len };
+  struct iovec remote_iov = { (void *)addr, len };
+
+  ssize_t bytes_written
+      = process_vm_writev (mem->pid, &local_iov, 1, &remote_iov, 1, 0);
+
+  return (bytes_written == len) ? TM_MEM_OK : TM_MEM_ERROR_UNDEFINED;
 }
 tm_mem_errors_t
 tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region, void *pattern,
@@ -226,25 +237,27 @@ tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region, void *pattern,
   return TM_MEM_OK;
 }
 tm_mem_errors_t
-tm_mem_alloc (tm_mem_t *mem, uintptr_t *addr, uint32_t size)
+tm_mem_alloc (tm_mem_t *mem, void *addr, uint32_t size, void **mapped_mem)
 {
-  // use mmap
-  // if error, return error
+  *mapped_mem = mmap (addr, size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                      fileno (mem->mem_file), 0);
+
+  return (*mapped_mem == MAP_FAILED) ? TM_MEM_ERROR_UNDEFINED : TM_MEM_OK;
+}
+tm_mem_errors_t
+tm_mem_free (tm_mem_t *mem, void *addr, uint32_t size)
+{
+  if (munmap (addr, size) == -1)
+    return TM_MEM_ERROR_UNDEFINED;
+
   return TM_MEM_OK;
 }
 tm_mem_errors_t
-tm_mem_free (tm_mem_t *mem, uintptr_t addr)
+tm_mem_change_prot (tm_mem_t *mem, void *addr, uint32_t size, uint32_t prot)
 {
-  // use munmap
-  // if error, return error
-  return TM_MEM_OK;
-}
-tm_mem_errors_t
-tm_mem_change_prot (tm_mem_t *mem, uintptr_t addr, uint32_t size,
-                    uint32_t prot)
-{
-  // use mprotect
-  // if error, return error
+  if (mprotect (addr, size, prot) == -1)
+    return TM_MEM_ERROR_UNDEFINED;
+
   return TM_MEM_OK;
 }
 
