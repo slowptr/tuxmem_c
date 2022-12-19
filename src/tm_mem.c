@@ -18,7 +18,7 @@ _tm_mem_get_exe_link (uint32_t pid, const char **out)
   char exe[64];
   ssize_t len = readlink (path, exe, sizeof (exe));
   if (len == -1)
-    return TM_MEM_ERROR_UNDEFINED;
+    return TM_MEM_ERROR_NOT_FOUND;
 
   exe[len] = '\0';
 
@@ -34,10 +34,7 @@ _tm_mem_open_mem_fd (uint32_t pid, FILE **out)
 
   FILE *mem = fopen (path, "r");
   if (mem == NULL)
-    {
-      perror ("fopen");
-      return TM_MEM_ERROR_UNDEFINED;
-    }
+    return TM_MEM_ERROR_NOT_FOUND;
 
   *out = mem;
   return TM_MEM_OK;
@@ -51,10 +48,7 @@ _tm_mem_get_pid_of_name (const char *name, uint32_t *out)
 
   proc_folder = opendir ("/proc");
   if (proc_folder == NULL)
-    {
-      perror ("opendir");
-      return TM_MEM_ERROR_NO_ACCESS;
-    }
+    return TM_MEM_ERROR_NO_ACCESS;
 
   struct dirent *entry;
   while ((entry = readdir (proc_folder)))
@@ -132,10 +126,7 @@ tm_mem_get_region_list (tm_mem_t *mem, tm_mem_region_t **regions,
 
   FILE *maps = fopen (path, "r");
   if (maps == NULL)
-    {
-      perror ("fopen");
-      return TM_MEM_ERROR_UNDEFINED;
-    }
+    return TM_MEM_ERROR_NOT_FOUND;
 
   // iterate through lines
   char line[256];
@@ -211,7 +202,7 @@ tm_mem_read (tm_mem_t *mem, uintptr_t addr, void *buf, uint32_t len)
   ssize_t bytes_read
       = process_vm_readv (mem->pid, &local_iov, 1, &remote_iov, 1, 0);
 
-  return (bytes_read == len) ? TM_MEM_OK : TM_MEM_ERROR_UNDEFINED;
+  return (bytes_read == len) ? TM_MEM_OK : TM_MEM_ERROR_RW_FAILED;
 }
 tm_mem_errors_t
 tm_mem_write (tm_mem_t *mem, uintptr_t addr, void *buf, uint32_t len)
@@ -222,7 +213,7 @@ tm_mem_write (tm_mem_t *mem, uintptr_t addr, void *buf, uint32_t len)
   ssize_t bytes_written
       = process_vm_writev (mem->pid, &local_iov, 1, &remote_iov, 1, 0);
 
-  return (bytes_written == len) ? TM_MEM_OK : TM_MEM_ERROR_UNDEFINED;
+  return (bytes_written == len) ? TM_MEM_OK : TM_MEM_ERROR_RW_FAILED;
 }
 tm_mem_errors_t
 tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region, void *pattern,
@@ -248,7 +239,7 @@ tm_mem_errors_t
 tm_mem_free (void *addr, uint32_t size)
 {
   if (munmap (addr, size) == -1)
-    return TM_MEM_ERROR_UNDEFINED;
+    return TM_MEM_ERROR_UNMAP_FAILED;
 
   return TM_MEM_OK;
 }
@@ -256,7 +247,7 @@ tm_mem_errors_t
 tm_mem_change_prot (void *addr, uint32_t size, uint32_t prot)
 {
   if (mprotect (addr, size, prot) == -1)
-    return TM_MEM_ERROR_UNDEFINED;
+    return TM_MEM_ERROR_PROT_FAILED;
 
   return TM_MEM_OK;
 }

@@ -18,6 +18,14 @@ tm_utils_status_to_str (tm_mem_errors_t status)
       return "ERR: No access";
     case TM_MEM_ERROR_NOT_FOUND:
       return "ERR: Not found";
+    case TM_MEM_ERROR_MAP_FAILED:
+      return "ERR: Map failed";
+    case TM_MEM_ERROR_UNMAP_FAILED:
+      return "ERR: Unmap failed";
+    case TM_MEM_ERROR_PROT_FAILED:
+      return "ERR: Protection failed";
+    case TM_MEM_ERROR_RW_FAILED:
+      return "ERR: Read/write failed";
     default:
       return "OK";
     }

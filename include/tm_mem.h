@@ -11,6 +11,9 @@ typedef enum tm_mem_errors_e
   TM_MEM_ERROR_NO_ACCESS,
   TM_MEM_ERROR_NOT_FOUND,
   TM_MEM_ERROR_MAP_FAILED,
+  TM_MEM_ERROR_UNMAP_FAILED,
+  TM_MEM_ERROR_PROT_FAILED,
+  TM_MEM_ERROR_RW_FAILED,
 } tm_mem_errors_t;
 
 typedef struct tm_mem_s
