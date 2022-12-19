@@ -239,13 +239,13 @@ tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region, void *pattern,
 tm_mem_errors_t
 tm_mem_alloc (tm_mem_t *mem, void *addr, uint32_t size, void **mapped_mem)
 {
-  *mapped_mem = mmap (addr, size, PROT_READ | PROT_WRITE, MAP_SHARED,
-                      fileno (mem->mem_file), 0);
+  *mapped_mem = mmap (addr, size, PROT_READ | PROT_WRITE,
+                      MAP_SHARED | MAP_ANONYMOUS, fileno (mem->mem_file), 0);
 
-  return (*mapped_mem == MAP_FAILED) ? TM_MEM_ERROR_UNDEFINED : TM_MEM_OK;
+  return (*mapped_mem == MAP_FAILED) ? TM_MEM_ERROR_MAP_FAILED : TM_MEM_OK;
 }
 tm_mem_errors_t
-tm_mem_free (tm_mem_t *mem, void *addr, uint32_t size)
+tm_mem_free (void *addr, uint32_t size)
 {
   if (munmap (addr, size) == -1)
     return TM_MEM_ERROR_UNDEFINED;
@@ -253,7 +253,7 @@ tm_mem_free (tm_mem_t *mem, void *addr, uint32_t size)
   return TM_MEM_OK;
 }
 tm_mem_errors_t
-tm_mem_change_prot (tm_mem_t *mem, void *addr, uint32_t size, uint32_t prot)
+tm_mem_change_prot (void *addr, uint32_t size, uint32_t prot)
 {
   if (mprotect (addr, size, prot) == -1)
     return TM_MEM_ERROR_UNDEFINED;

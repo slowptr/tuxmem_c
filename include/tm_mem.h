@@ -10,6 +10,7 @@ typedef enum tm_mem_errors_e
   TM_MEM_ERROR_UNDEFINED,
   TM_MEM_ERROR_NO_ACCESS,
   TM_MEM_ERROR_NOT_FOUND,
+  TM_MEM_ERROR_MAP_FAILED,
 } tm_mem_errors_t;
 
 typedef struct tm_mem_s
@@ -45,9 +46,8 @@ tm_mem_errors_t tm_mem_find_pattern (tm_mem_t *mem, tm_mem_region_t *region,
                                      uintptr_t *addr);
 tm_mem_errors_t tm_mem_alloc (tm_mem_t *mem, void *addr, uint32_t size,
                               void **mapped_mem);
-tm_mem_errors_t tm_mem_free (tm_mem_t *mem, void *addr, uint32_t size);
-tm_mem_errors_t tm_mem_change_prot (tm_mem_t *mem, void *addr, uint32_t size,
-                                    uint32_t prot);
+tm_mem_errors_t tm_mem_free (void *addr, uint32_t size);
+tm_mem_errors_t tm_mem_change_prot (void *addr, uint32_t size, uint32_t prot);
 
 tm_mem_errors_t tm_mem_hook_create (tm_mem_t *mem, void *addr, void *hook,
                                     void **orig);
