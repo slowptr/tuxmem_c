@@ -12,3 +12,4 @@ Library to manipulate another processes memory
 - patternscan
 - function hooking
 - lib inject
+- (rework w. cross-platform?)
